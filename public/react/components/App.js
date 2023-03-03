@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { PagesList } from './PagesList';
-// import { PageDetails } from './PageDetails';
+import { AddPageForm } from './AddPageForm';
+import { PageDetails } from './PageDetails';
 import apiURL from '../api';
 
 export const App = () => {
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState(null);
+  const [isAddingArticle, setIsAddingArticle] = useState(false); // New state variable
 
   async function fetchPages() {
     try {
@@ -34,6 +36,30 @@ export const App = () => {
   function handleBackToList() {
     setSelectedPage(null);
   }
+  function handleAddArticleClick() {
+    setIsAddingArticle(true);
+  }
+
+  function handleCancelAddArticle() {
+    setIsAddingArticle(false);
+  }
+
+  async function handleAddArticleSubmit(formData) {
+    try {
+      const response = await fetch(`${apiURL}/wiki`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({formData})
+      });
+      const newPage = await response.json();
+      setPages([...pages, newPage]);
+      setIsAddingArticle(false);
+    } catch (err) {
+      console.log("Oh no an error! ", err)
+    }
+  }
 
   useEffect(() => {
     fetchPages();
@@ -42,22 +68,30 @@ export const App = () => {
   return (
     <main>
       <h1>WikiVerse</h1>
-      {
-        selectedPage ? (
-          <PageDetails
-            page={selectedPage}
-            onBackToList={handleBackToList}
-          />
-        ) : (
-          <>
-            <h2>An interesting 📚</h2>
-            <PagesList
-              pages={pages}
-              onPageSelect={handlePageSelect}
+      {isAddingArticle ? (
+        <AddPageForm
+          onCancel={handleCancelAddArticle}
+          onSubmit={handleAddArticleSubmit}
+        />
+      ) : (
+        <>
+          {selectedPage ? (
+            <PageDetails
+              page={selectedPage}
+              onBackToList={handleBackToList}
             />
-          </>
-        )
-      }
+          ) : (
+            <>
+              <button onClick={handleAddArticleClick}>Add Article</button>
+              <h2>An interesting 📚</h2>
+              <PagesList
+                pages={pages}
+                onPageSelect={handlePageSelect}
+              />
+            </>
+          )}
+        </>
+      )}
     </main>
   )
 }
